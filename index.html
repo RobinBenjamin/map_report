@@ -70,14 +70,20 @@
             }, 10);
         });
 
-        function addMarker(lat, lng, text) {
-            var marker = L.marker([lat, lng]).addTo(map);
-            marker.bindPopup(text);
+        function addMarker(lat, lng, text, save = true) {
+            var now = new Date();
+            var datetime = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
+            var content = text + '<br>' + datetime;
 
-            var savedMarkers = localStorage.getItem('markers');
-            savedMarkers = savedMarkers ? JSON.parse(savedMarkers) : [];
-            savedMarkers.push({ lat: lat, lng: lng, text: text });
-            localStorage.setItem('markers', JSON.stringify(savedMarkers));
+            var marker = L.marker([lat, lng]).addTo(map);
+            marker.bindPopup(content);
+
+            if (save) {
+                var savedMarkers = localStorage.getItem('markers');
+                savedMarkers = savedMarkers ? JSON.parse(savedMarkers) : [];
+                savedMarkers.push({ lat: lat, lng: lng, text: content });
+                localStorage.setItem('markers', JSON.stringify(savedMarkers));
+            }
         }
 
         function loadMarkers() {
@@ -85,7 +91,7 @@
             if (savedMarkers) {
                 savedMarkers = JSON.parse(savedMarkers);
                 savedMarkers.forEach(function(markerData) {
-                    addMarker(markerData.lat, markerData.lng, markerData.text);
+                    addMarker(markerData.lat, markerData.lng, markerData.text, false);
                 });
             }
         }

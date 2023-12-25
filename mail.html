@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive World Map with Search</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        #map {
+            height: 100%;
+            width: 100%;
+            position: absolute;
+            z-index: -1;
+        }
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .search-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+        }
+        .search-container input[type="text"] {
+            padding: 10px;
+            width: 300px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="search-container" id="search-container">
+        <input type="text" id="location-input" placeholder="Enter location, e.g., Zurich" onkeypress="handleKeyPress(event)">
+    </div>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    <script>
+        var map = L.map('map').setView([0, 0], 2);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        var geocoder = L.Control.Geocoder.nominatim();
+
+        map.on('click', function(e) {
+            var popup = L.popup()
+                .setLatLng(e.latlng)
+                .setContent('<input id="popup-input" type="text" placeholder="Enter text here"><button onclick="addMarker(' + e.latlng.lat + ', ' + e.latlng.lng + ')">Enter</button>')
+                .openOn(map);
+
+            setTimeout(function() {
+                var input = document.getElementById('popup-input');
+                input.focus();
+                input.onkeypress = function(event) {
+                    if (event.key === 'Enter') {
+                        addMarker(e.latlng.lat, e.latlng.lng, input.value);
+                        map.closePopup();
+                    }
+                };
+            }, 10);
+        });
+
+        function addMarker(lat, lng, text) {
+            var marker = L.marker([lat, lng]).addTo(map);
+            marker.bindPopup(text);
+
+            var savedMarkers = localStorage.getItem('markers');
+            savedMarkers = savedMarkers ? JSON.parse(savedMarkers) : [];
+            savedMarkers.push({ lat: lat, lng: lng, text: text });
+            localStorage.setItem('markers', JSON.stringify(savedMarkers));
+        }
+
+        function loadMarkers() {
+            var savedMarkers = localStorage.getItem('markers');
+            if (savedMarkers) {
+                savedMarkers = JSON.parse(savedMarkers);
+                savedMarkers.forEach(function(markerData) {
+                    addMarker(markerData.lat, markerData.lng, markerData.text);
+                });
+            }
+        }
+
+        loadMarkers();
+
+        function handleKeyPress(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                var input = document.getElementById('location-input').value;
+                geocoder.geocode(input, function(results) {
+                    if (results.length) {
+                        map.fitBounds(results[0].bbox);
+                        document.getElementById('search-container').style.display = 'none';
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html>
